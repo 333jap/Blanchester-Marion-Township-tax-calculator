@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ohio Ballot Property Tax Calculator</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background: var(--surface);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        h1 {
+            color: var(--primary);
+            margin-top: 0;
+            font-size: 24px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+        }
+        .input-group {
+            margin: 20px 0 30px 0;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+        .right {
+            text-align: right;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #e2e8f0;
+            font-size: 18px;
+        }
+        .note {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        .footer-note {
+            margin-top: 30px;
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Ohio Ballot Property Tax Calculator</h1>
+    <p>Calculates estimated actual out-of-pocket costs incorporating Ohio's 35% assessment rate, H.B. 140 rules, and rollback credits.</p>
+    
+    <div class="input-group">
+        <label for="marketValue">Enter Your Home's Total Appraised Market Value (\$):</label>
+        <input type="number" id="marketValue" value="100000" oninput="calculateTaxes()">
+        <div class="note">Use the total true/market value from the County Auditor website.</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Levy Name</th>
+                <th>Millage</th>
+                <th class="right">Estimated Net Annual Cost</th>
+            </tr>
+        </thead>
+        <tbody id="levyRows">
+            <!-- JavaScript inserts dynamic rows here -->
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td>TOTAL COMBINED TAX</td>
+                <td>8.65</td>
+                <td class="right" id="grandTotal">\$0.00</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="footer-note">
+        * Estimates incorporate the 10% Non-Business Rollback, 2.5% Owner-Occupancy Credit, and exact reverse-engineered H.B. 920 reduction factors to perfectly match your local ballot statement guidelines.
+    </div>
+</div>
+
+<script>
+    // Exact data matching your ballot per \$100k market value
+    const levies = [
+        { name: "Health District Renewal", millage: 0.5, reductionFactor: 0.485714 },
+        { name: "Senior Services Renewal", millage: 2.35, reductionFactor: 0.208929 },
+        { name: "Mental Health Recovery Renewal", millage: 1.0, reductionFactor: 0.477551 },
+        { name: "Blanchester Cemetery NEW TAX", millage: 1.25, reductionFactor: 0.000000 },
+        { name: "Blanchester - Marion Fire Renewal", millage: 3.55, reductionFactor: 0.507711 }
+    ];
+
+    function calculateTaxes() {
+        const marketValue = parseFloat(document.getElementById('marketValue').value) || 0;
+        const tbody = document.getElementById('levyRows');
+        tbody.innerHTML = '';
+        
+        let grandTotal = 0;
+
+        levies.forEach(levy => {
+            // 1. Calculate Gross Tax based on Ohio's 35% assessment rate
+            // 2. Scale it down dynamically using the H.B. 920 reduction factor
+            let grossTax = ((marketValue * 0.35 * levy.millage) / 1000) * (1 - levy.reductionFactor);
+            
+            // 3. Deduct 10% non-business and 2.5% owner-occupancy rollbacks (Total 12.5% reduction)
+            let nonBizRollback = grossTax * 0.10;
+            let ownerOccCredit = grossTax * 0.025;
+            let netTax = grossTax - nonBizRollback - ownerOccCredit;
+            
+            grandTotal += netTax;
+
+            // Generate table row HTML element dynamically
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${levy.name}</td>
+                <td>${levy.millage}</td>
+                <td class="right">$${netTax.toFixed(2)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        // Update the running total bottom display element
+        document.getElementById('grandTotal').innerText = `$${grandTotal.toFixed(2)}`;
+    }
+
+    // Run computation immediately on code initial page load
+    calculateTaxes();
+</script>
+
+</body>
+</html>
